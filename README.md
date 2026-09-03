@@ -2,7 +2,7 @@
 
 FaceProof is a high-precision, modular Python pipeline that takes a face scan as input, detects and encodes facial features, queries real-time reverse image search via Google Lens (SerpAPI), extracts and ranks matching web/social media content, and generates a deterministic SHA-256 cryptographic fingerprint ready for blockchain registration.
 
-> **Scope Note**: This project implements the complete pipeline up to and including the cryptographic fingerprint and structured JSON handoff artifact (`output/result.json`). Blockchain smart contract deployment/verification is intentionally reserved for the next phase.
+> **Scope Note**: This project implements the complete pipeline through local blockchain registration and verification. The Python pipeline writes the structured handoff artifact (`output/result.json`), and the Node.js layer registers its matched post on a local Hardhat network.
 
 ---
 
@@ -20,6 +20,9 @@ flowchart TD
     G -->|Ranked Best Match| H[Canonical Metadata Extraction]
     H -->|Deterministic JSON Serialization| I[SHA-256 Fingerprint Generator]
     I --> J[output/result.json - Blockchain Handoff]
+    J --> K[Node.js Blockchain Service]
+    K --> L[PostVerification.sol - Hardhat Local Network]
+    L --> M[Receipt, Block, Timestamp]
 ```
 
 ---
@@ -35,6 +38,7 @@ flowchart TD
 - **Structured Blockchain Handoff**: Produces `output/result.json` specifically structured for another developer to read `fingerprint` and register on-chain.
 - **Rich Terminal UI**: Polished CLI with step-by-step progress tracking (`[1/6]` through `[6/6]`), formatted comparison tables, and user-friendly error messages.
 - **Dry-Run Mode**: Offline verification flag (`--dry-run`) to test local face processing and fingerprint generation without consuming API quota.
+- **Local Blockchain Verification**: Registers the matched post fingerprint in a Solidity contract running on a local Hardhat node, then detects modified post data.
 
 ---
 
@@ -50,6 +54,7 @@ flowchart TD
 | Serialization & Hashing | Python `json`, `hashlib` (SHA-256) |
 | Terminal Interface | `rich` |
 | Config Management | `python-dotenv` |
+| Local Blockchain | Node.js, Hardhat, Solidity, ethers.js |
 
 ---
 
@@ -246,3 +251,9 @@ The next developer can easily integrate blockchain by:
 - **Validation Signal vs. Proof of Identity**: Face embedding cosine similarity is an additional visual validation signal only. It does NOT mathematically prove legal real-world identity.
 - **Best-Effort Thumbnail Validation**: Many social media platforms restrict direct hotlinking. If a candidate image cannot be downloaded or contains no detectable face, the candidate is retained at its search rank and marked as `thumbnail_unavailable` or `face_not_detected` rather than treated as a fatal pipeline failure.
 - **Deterministic Hashing**: SHA-256 provides a tamper-evident cryptographic digest of the record; it guarantees payload integrity, not real-world truth.
+
+## Security Notes
+
+- Never commit `.env` files or private keys.
+- Use only the disposable accounts printed by `npx hardhat node` for local development.
+- Do not store face embeddings, raw images, or unnecessary personal information on-chain.
